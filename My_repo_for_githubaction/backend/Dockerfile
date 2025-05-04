@@ -1,27 +1,31 @@
-# Use OpenJDK image as base
-FROM openjdk:17-jdk-slim as build
+# Use the Eclipse Temurin base image for Java 17
+FROM eclipse-temurin:17-jdk-jammy AS build
 
-# Set working directory
+# Set the working directory in the container
 WORKDIR /app
 
-# Copy the pom.xml and download dependencies (caching dependencies)
-COPY pom.xml .
+# Copy the pom.xml and download dependencies (this will cache dependencies for faster builds)
+COPY pom.xml . 
 RUN ./mvnw dependency:go-offline
 
-# Copy the source code
-COPY src ./src
+# Copy the rest of the source code into the container
+COPY src /app/src
 
-# Build the application
+# Package the application using Maven
 RUN ./mvnw clean package -DskipTests
 
-# Second stage: create the runtime image
-FROM openjdk:17-jdk-slim
+# Use a lighter image for the final runtime image
+FROM eclipse-temurin:17-jre-jammy
 
+# Set the working directory in the container
 WORKDIR /app
 
-# Copy the JAR file from the build stage
-COPY --from=build /app/target/*.jar app.jar
+# Copy the packaged JAR file from the build stage
+COPY --from=build /app/target/spring-app-1.0.0.jar /app/spring-app.jar
 
-# Run the app
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Run the application
+CMD ["java", "-jar", "spring-app.jar"]
+
+# Expose the application on port 8080
+EXPOSE 8080
 
