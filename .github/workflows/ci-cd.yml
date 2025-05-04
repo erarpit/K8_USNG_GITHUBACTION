@@ -2,60 +2,40 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches:
-      - main
-      - develop
-  pull_request:
-    branches:
-      - main
-      - develop
+    branches: [ develop ]  # or main
 
 jobs:
-  build-deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
-    env:
-      IMAGE_NAME: yourdockerhubusername/spring-app
-      K8S_NAMESPACE: default
-
     steps:
-    - name: Checkout Code
+    - name: Checkout code
       uses: actions/checkout@v3
 
     - name: Set up JDK 17
       uses: actions/setup-java@v3
       with:
         java-version: '17'
-        distribution: 'temurin'
 
-    - name: Build Spring Boot App
-      run: |
-        cd backend
-        ./mvnw clean package -DskipTests
+    - name: Build with Maven
+      run: mvn clean package -DskipTests
 
-    - name: Log in to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
+    - name: Build Docker image
+      run: docker build -t your-dockerhub-username/spring-app:v2 .
 
-    - name: Build and Push Docker Image
-      run: |
-        docker build -t $IMAGE_NAME:latest ./backend
-        docker push $IMAGE_NAME:latest
+    - name: Login to DockerHub
+      run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+
+    - name: Push to DockerHub
+      run: docker push your-dockerhub-username/spring-app:v2
 
     - name: Set up kubectl
       uses: azure/setup-kubectl@v3
-      with:
-        version: 'latest'
-
-    - name: Set up Kubeconfig
-      run: |
-        mkdir -p ~/.kube
-        echo "${{ secrets.KUBECONFIG }}" > ~/.kube/config
 
     - name: Deploy to Kubernetes
       run: |
-        kubectl apply -f k8s/
-        kubectl rollout restart deployment spring-app -n $K8S_NAMESPACE
+        kubectl apply -f k8s/deployment.yaml
+        kubectl apply -f k8s/service.yaml
+      env:
+        KUBECONFIG: ${{ secrets.KUBECONFIG }}
 
