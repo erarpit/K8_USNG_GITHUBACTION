@@ -24,8 +24,10 @@ jobs:
 
     - name: Build and Push Docker Image
       run: |
-        docker build -t ${{ secrets.DOCKER_USERNAME }}/spring-app:latest -f K8_USNG_GITHUBACTION/My_repo_for_githubaction/backend .
-        docker push ${{ secrets.DOCKER_USERNAME }}/spring-app:latest
+        docker build -t ${{ secrets.DOCKER_USERNAME }}/spring-app:latest -f My_repo_for_githubaction/backend/Dockerfile backend/
+
+        docker build -t ${{ secrets.DOCKER_USERNAME }}/spring-app:latest ./backend
+
 
     - name: Set up kubectl
       uses: azure/setup-kubectl@v3
