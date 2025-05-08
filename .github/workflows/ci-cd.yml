@@ -37,12 +37,12 @@ jobs:
     - name: Set up Kubeconfig
       run: |
         mkdir -p $HOME/.kube
-        echo "${{ secrets.KUBECONFIG }}" > $HOME/.kube/config
+        echo "${{ secrets.KUBE_CONFIG_DATA }}" > $HOME/.kube/config
 
     - name: Deploy to Kubernetes
       run: |
-        kubectl apply -f k8s/namespace.yaml
-        kubectl apply -f k8s/
+        
+        kubectl apply -f ./My_repo_for_githubaction/k8s/
         helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
         helm repo update
         helm upgrade --install prometheus prometheus-community/kube-prometheus-stack \
